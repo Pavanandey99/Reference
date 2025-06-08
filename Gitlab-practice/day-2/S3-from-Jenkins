@@ -1,0 +1,91 @@
+1. Switch to User
+
+2. Java installer
+        yum install java-21-amazon-corretto.x86_64 -y
+
+3. Install Jenkins through following commands:
+        sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+        sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+        sudo yum install jenkins -y
+        sudo systemctl enable jenkins
+        sudo systemctl start jenkins
+
+4. Install Git
+        sudo yum install git -y
+
+5. Install Terraform
+        sudo yum install -y yum-utils
+        sudo yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+        sudo yum -y install terraform
+
+6. Jenkins Pipeline using parameters and in a specific directory
+        pipeline {
+        
+        agent any
+
+        parameters {
+            choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Terraform Action')
+        }
+
+        stages {
+            stage('git clone') {
+                steps {
+                git branch: 'main', url: 'github repository link'
+                }
+            }
+            stage('tf init') {
+                steps {
+                    dir('Day-10-userdata') {
+                    sh 'terraform init'
+                    }
+                }
+            }
+            stage('tf plan') {
+                steps {
+                    dir('Day-10-userdata') {
+                    sh 'terraform plan'
+                }
+                }
+            }
+            stage('tf apply/destroy') {
+                steps {
+                     dir('Day-10-userdata') {
+                    sh "terraform ${params.ACTION} -auto-approve"
+                     }
+                }
+            }
+        }
+    }
+
+7. S3 Bucket creation through Jenkins
+    pipeline {
+        agent any  // Use any available Jenkins agent to run the job
+
+        environment {
+            BUCKET_NAME = 'my-unique-bucket-2025'  // Name of the S3 bucket (must be globally unique)
+            AWS_REGION  = 'us-east-1'              // AWS region where the bucket will be created
+        }
+
+        stages {
+            stage('Create S3 Bucket') {
+                steps {
+                    script {
+                        // Use AWS credentials securely from Jenkins Credentials Manager
+                        withCredentials([[
+                            $class: 'AmazonWebServicesCredentialsBinding', // Binds AWS credentials to environment variables
+                            credentialsId: 'your-aws-credentials-id'        // Replace with the actual ID of your stored AWS credentials
+                        ]]) {
+                        // Run AWS CLI command to create the S3 bucket
+                            sh '''
+                                aws s3api create-bucket \
+                                --bucket $BUCKET_NAME \                         # Specifies the bucket name
+                                --region $AWS_REGION \                          # Specifies the region
+                                --create-bucket-configuration LocationConstraint=$AWS_REGION  # Required for regions other than us-east-1
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+

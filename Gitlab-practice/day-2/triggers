@@ -1,0 +1,17 @@
+1. Build periodically
+    Triggers the job on a time-based schedule using cron syntax.
+        Example: H 4 * * 1-5 (Weekdays at 4 AM)
+
+2. Poll SCM
+    Periodically checks the source control for changes.
+    If changes are found, it triggers a build.
+        Example: H/15 * * * * (Every 15 minutes)
+
+3. GitHub hook trigger for GITScm polling
+    Triggers a build when a webhook from GitHub is received.
+    Requires GitHub plugin and webhook setup in the repo.
+    
+4. Build after other projects are built
+    Triggers this job once specified upstream projects finish successfully.
+    Used for job chaining or dependency workflows.
+
